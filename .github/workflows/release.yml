@@ -1,34 +1,5 @@
 name: release
 
-# Triggered by pushing any `v*` tag. Two jobs run sequentially:
-#
-#  1. `goreleaser`  — builds the Go binary matrix and uploads the
-#                       resulting .tar.gz / .zip archives to the
-#                       GitHub Release. Consumes .goreleaser.yaml.
-#
-#  2. `pypi`         — uses go-to-wheel (https://github.com/simonw/go-to-wheel)
-#                       to bundle the Go binary into a Python wheel
-#                       and publishes 8 platform-specific wheels to
-#                       PyPI via OIDC trusted publishing. The
-#                       pypi job is independent of goreleaser output
-#                       (it builds from source itself) so that the
-#                       Go binary inside the wheel always matches
-#                       the tag.
-#
-# Trusted publishing must be configured once on PyPI:
-#   PyPI -> Project -> Publishing -> Add a new pending publisher
-#     Owner:        bangnh1
-#     Repository:   grafana-oncall-mcp
-#     Workflow:     release.yml
-#     Environment:  pypi
-#
-# After that, pushing a `vX.Y.Z` tag produces:
-#   - GitHub Release: source archives + checksums
-#   - PyPI: 8 wheels (linux/amd64+arm64 × glibc+musl, darwin/amd64+arm64,
-#           windows/amd64+arm64) of `grafana-oncall-mcp X.Y.Z`
-#
-# Local dry-run (no PyPI publish): see docs/release.md
-
 on:
   push:
     tags:
@@ -135,12 +106,6 @@ jobs:
             --url "https://github.com/bangnh1/grafana-oncall-mcp" \
             --license Apache-2.0 \
             --readme README.md
-        env:
-          # go-to-wheel's --readme may pick up README.md which
-          # itself contains no secrets; this env var is here as
-          # a marker for future READMEs that might embed env
-          # examples; we explicitly do NOT pass any tokens.
-          # (The wheel's METADATA only embeds the README verbatim.)
 
       - name: List built wheels
         run: |
