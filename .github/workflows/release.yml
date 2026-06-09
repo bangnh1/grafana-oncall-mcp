@@ -55,21 +55,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Extract release notes from CHANGELOG.md
+      - name: Extract release notes from git tag
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          if [ -f CHANGELOG.md ]; then
-            awk -v ver="$VERSION" '
-              /^## \[/ {
-                if (found) exit
-                if ($0 ~ "## \\[" ver "\\]") found=1
-                next
-              }
-              /^\[.*\]: https:\/\// { next }
-              found { print }
-            ' CHANGELOG.md > /tmp/release-notes.md
-          fi
-          if [ ! -s /tmp/release-notes.md ]; then
+          # Use the git tag message as release notes.
+          # Falls back to a simple "Release vX.Y.Z" line if
+          # the tag has no message body.
+          TAG_MSG=$(git tag -l --format='%(contents)' "v${VERSION}" 2>/dev/null || true)
+          if [ -n "$TAG_MSG" ]; then
+            printf '%s\n' "$TAG_MSG" > /tmp/release-notes.md
+          else
             echo "Release ${GITHUB_REF_NAME}" > /tmp/release-notes.md
           fi
 
@@ -112,7 +107,6 @@ jobs:
 
       - name: Build platform wheels
         run: |
-          VERSION=${GITHUB_REF_NAME#v}
           # Strip the leading "v" from the git tag; go-to-wheel
           # expects a PEP 440 version (e.g. 0.2.0, not v0.2.0).
           #
