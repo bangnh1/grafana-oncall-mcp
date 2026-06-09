@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bangnh1/grafana-oncall-mcp/contracts/resolve_alert_group.output.schema.json",
+  "title": "resolve_alert_group - output",
+  "$ref": "_defs.schema.json#/$defs/WriteResult"
+}

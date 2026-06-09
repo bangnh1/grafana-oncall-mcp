@@ -1,0 +1,42 @@
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gofmt
+    - gocyclo
+    - depguard
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+  depguard:
+    rules:
+      main:
+        list-mode: strict
+        deny:
+          - pkg: "log"
+            desc: "Use log/slog instead"
+          - pkg: "github.com/rs/zerolog"
+            desc: "Use log/slog instead"
+  gofmt:
+    simplify: true
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+run:
+  timeout: 5m
+  tests: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

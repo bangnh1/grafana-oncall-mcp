@@ -1,0 +1,43 @@
+services:
+  grafana:
+    image: grafana/grafana-oss:11.2.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: "grafana-oncall-app"
+    volumes:
+      - ./grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  oncall-seed:
+    image: curlimages/curl:latest
+    depends_on:
+      grafana:
+        condition: service_healthy
+    volumes:
+      - ./seed.sh:/seed.sh:ro
+    entrypoint: ["/seed.sh"]
+
+  oncall-mcp:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    environment:
+      GRAFANA_URL: http://grafana:3000
+      GRAFANA_SERVICE_ACCOUNT_TOKEN: glsa_test_token
+      # The legacy-only fixture has no IRM plugin, so we must
+      # explicitly tell the server to prefer grafana-oncall-app
+      # (otherwise the unset default would fail to find IRM and
+      # error out with ONCALL_PLUGIN_MISSING).
+      GRAFANA_ONCALL_PLUGIN_PREFERENCE: "oncall-app"
+    depends_on:
+      oncall-seed:
+        condition: service_completed_successfully
+    ports:
+      - "8000:8000"

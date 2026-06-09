@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bangnh1/grafana-oncall-mcp/contracts/silence_alert_group.input.schema.json",
+  "title": "silence_alert_group - input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["alert_group_id", "until"],
+  "properties": {
+    "alert_group_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the alert group to silence."
+    },
+    "until": {
+      "$ref": "_defs.schema.json#/$defs/Timestamp",
+      "description": "Future timestamp when silence expires."
+    },
+    "comment": {
+      "type": "string",
+      "description": "Optional operator-visible reason for silencing."
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bangnh1/grafana-oncall-mcp/contracts/silence_alert_group.output.schema.json",
+  "title": "silence_alert_group - output",
+  "allOf": [
+    { "$ref": "_defs.schema.json#/$defs/WriteResult" },
+    {
+      "type": "object",
+      "required": ["silenced_until"],
+      "properties": {
+        "silenced_until": { "$ref": "_defs.schema.json#/$defs/Timestamp" }
+      }
+    }
+  ]
+}

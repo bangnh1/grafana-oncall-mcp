@@ -1,0 +1,46 @@
+# --- Go build artifacts ---
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# --- Go coverage ---
+coverage.out
+coverage.html
+
+# --- Spec-kit & opencode tooling (not part of the runtime image) ---
+.opencode/
+.specify/
+specs/
+
+# --- IDE / editor ---
+.idea/
+.vscode/
+*.iml
+
+# --- Environment & secrets (must never be baked into the image) ---
+.env
+.env.*
+*.key
+*.crt
+*.pem
+
+# --- Docker meta ---
+Dockerfile*
+.dockerignore
+
+# --- VCS ---
+.git/
+.gitignore
+
+# --- OS / editor scratch ---
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+*.log

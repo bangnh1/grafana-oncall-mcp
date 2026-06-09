@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bangnh1/grafana-oncall-mcp/contracts/_defs.schema.json",
+  "title": "Shared definitions for Grafana OnCall MCP tool contracts",
+  "description": "All other contract files $ref the shapes defined here.",
+  "$defs": {
+    "Cursor": {
+      "type": "string",
+      "description": "Opaque base64-encoded pagination continuation token. Empty string is not allowed; omit the field for the first page."
+    },
+    "Limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200,
+      "default": 50,
+      "description": "Maximum number of items to return in a single page."
+    },
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp, e.g. 2026-06-08T14:30:00Z."
+    },
+    "Duration": {
+      "type": "string",
+      "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+D)?(T(\\d+H)?(\\d+M)?(\\d+S)?)?$",
+      "description": "ISO 8601 duration, e.g. PT15M."
+    },
+    "Timezone": {
+      "type": "string",
+      "description": "IANA timezone name (e.g. Europe/London); UTC fallback when upstream value is missing or invalid."
+    },
+    "UserSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "username", "display_name"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "username": { "type": "string", "minLength": 1 },
+        "display_name": { "type": ["string", "null"] }
+      }
+    },
+    "User": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "username", "email", "display_name", "role", "timezone", "team_ids"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "username": { "type": "string", "minLength": 1 },
+        "email": { "type": ["string", "null"], "format": "email" },
+        "display_name": { "type": ["string", "null"] },
+        "role": { "type": ["string", "null"], "enum": ["admin", "editor", "viewer", null] },
+        "timezone": { "type": ["string", "null"] },
+        "team_ids": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "Team": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "email", "avatar_url"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "email": { "type": ["string", "null"] },
+        "avatar_url": { "type": ["string", "null"], "format": "uri" }
+      }
+    },
+    "Schedule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "name", "team_id", "type", "timezone",
+        "timezone_was_inferred", "shift_ids"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "team_id": { "type": ["string", "null"] },
+        "type": { "type": "string", "enum": ["web", "calendar", "ical"] },
+        "timezone": { "$ref": "#/$defs/Timezone" },
+        "timezone_was_inferred": { "type": "boolean" },
+        "shift_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "Shift": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "schedule_id", "name", "type", "start_at",
+        "duration", "frequency", "interval", "users", "rotation_start"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "schedule_id": { "type": "string", "minLength": 1 },
+        "name": { "type": ["string", "null"] },
+        "type": {
+          "type": "string",
+          "enum": ["single_event", "recurrent_event", "rolling_users"]
+        },
+        "start_at": { "$ref": "#/$defs/Timestamp" },
+        "duration": { "$ref": "#/$defs/Duration" },
+        "frequency": {
+          "type": ["string", "null"],
+          "enum": ["daily", "weekly", "monthly", null]
+        },
+        "interval": { "type": ["integer", "null"], "minimum": 1 },
+        "users": { "type": "array", "items": { "$ref": "#/$defs/UserSummary" } },
+        "rotation_start": { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
+    "AlertGroupSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "title", "state", "severity", "integration_id", "integration_name",
+        "route_id", "team_id", "created_at", "updated_at", "resolved_at",
+        "acknowledged_at", "acknowledged_by", "silenced_until", "alerts_count"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string" },
+        "state": { "type": "string", "enum": ["firing", "acknowledged", "resolved", "silenced"] },
+        "severity": { "type": ["string", "null"] },
+        "integration_id": { "type": "string", "minLength": 1 },
+        "integration_name": { "type": "string" },
+        "route_id": { "type": ["string", "null"] },
+        "team_id": { "type": ["string", "null"] },
+        "created_at": { "$ref": "#/$defs/Timestamp" },
+        "updated_at": { "$ref": "#/$defs/Timestamp" },
+        "resolved_at": { "type": ["string", "null"], "format": "date-time" },
+        "acknowledged_at": { "type": ["string", "null"], "format": "date-time" },
+        "acknowledged_by": {
+          "oneOf": [
+            { "$ref": "#/$defs/UserSummary" },
+            { "type": "null" }
+          ]
+        },
+        "silenced_until": { "type": ["string", "null"], "format": "date-time" },
+        "alerts_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "AlertGroup": {
+      "allOf": [
+        { "$ref": "#/$defs/AlertGroupSummary" },
+        {
+          "type": "object",
+          "required": ["labels", "permalink"],
+          "properties": {
+            "labels": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            },
+            "permalink": { "type": "string", "format": "uri" }
+          }
+        }
+      ]
+    },
+    "WriteResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "alert_group_id", "new_state", "was_already_in_state",
+        "acting_user", "performed_at"
+      ],
+      "properties": {
+        "alert_group_id": { "type": "string", "minLength": 1 },
+        "new_state": {
+          "type": "string",
+          "enum": ["firing", "acknowledged", "resolved", "silenced"]
+        },
+        "was_already_in_state": { "type": "boolean" },
+        "acting_user": { "$ref": "#/$defs/UserSummary" },
+        "performed_at": { "$ref": "#/$defs/Timestamp" }
+      }
+    },
+    "Page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["items", "next_cursor", "total_estimate"],
+      "properties": {
+        "items": { "type": "array" },
+        "next_cursor": { "type": ["string", "null"] },
+        "total_estimate": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    }
+  }
+}

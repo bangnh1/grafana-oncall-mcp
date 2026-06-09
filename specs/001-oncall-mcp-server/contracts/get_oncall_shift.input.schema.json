@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bangnh1/grafana-oncall-mcp/contracts/get_oncall_shift.input.schema.json",
+  "title": "get_oncall_shift — input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["shift_id"],
+  "properties": {
+    "shift_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the shift to retrieve."
+    }
+  }
+}

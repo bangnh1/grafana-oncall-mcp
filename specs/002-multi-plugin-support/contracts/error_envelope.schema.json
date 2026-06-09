@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bangnh1/grafana-oncall-mcp/contracts/error_envelope.schema.json",
+  "title": "Error envelope",
+  "description": "Returned by every tool when it fails. Stable across all 11 tools. The server never emits IRM_PLUGIN_MISSING; it is retained in this schema as a deprecated alias for ONCALL_PLUGIN_MISSING for one minor release per constitution Principle III.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["code", "message", "tool", "hint", "retryable"],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "INVALID_INPUT",
+        "NOT_FOUND",
+        "UNAUTHENTICATED",
+        "FORBIDDEN",
+        "UPSTREAM_RATE_LIMITED",
+        "UPSTREAM_UNAVAILABLE",
+        "UPSTREAM_TIMEOUT",
+        "ONCALL_PLUGIN_MISSING",
+        "IRM_PLUGIN_MISSING",
+        "INTERNAL",
+        "READ_ONLY_MODE",
+        "STATE_TRANSITION_REJECTED"
+      ]
+    },
+    "message": { "type": "string", "minLength": 1 },
+    "tool": { "type": "string", "minLength": 1 },
+    "hint": { "type": ["string", "null"] },
+    "retryable": { "type": "boolean" }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bangnh1/grafana-oncall-mcp/contracts/list_alert_groups.input.schema.json",
+  "title": "list_alert_groups — input",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": ["firing", "acknowledged", "resolved", "silenced"],
+      "description": "Filter by current state."
+    },
+    "integration_id": {
+      "type": "string",
+      "description": "Filter by originating integration."
+    },
+    "route_id": {
+      "type": "string",
+      "description": "Filter by matched route."
+    },
+    "team_id": {
+      "type": "string",
+      "description": "Filter by owning team."
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "AND-combined label match (e.g. {\"severity\":\"critical\"})."
+    },
+    "started_at_from": { "$ref": "_defs.schema.json#/$defs/Timestamp" },
+    "started_at_to": { "$ref": "_defs.schema.json#/$defs/Timestamp" },
+    "search": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Free-text search across title and labels."
+    },
+    "cursor": { "$ref": "_defs.schema.json#/$defs/Cursor" },
+    "limit": { "$ref": "_defs.schema.json#/$defs/Limit" }
+  }
+}

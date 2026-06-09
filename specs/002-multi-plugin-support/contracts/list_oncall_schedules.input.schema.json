@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bangnh1/grafana-oncall-mcp/contracts/list_oncall_schedules.input.schema.json",
+  "title": "list_oncall_schedules — input",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "team_id": {
+      "type": "string",
+      "description": "If set, only schedules owned by this team are returned."
+    },
+    "cursor": { "$ref": "_defs.schema.json#/$defs/Cursor" },
+    "limit": { "$ref": "_defs.schema.json#/$defs/Limit" }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bangnh1/grafana-oncall-mcp/contracts/get_oncall_shift.output.schema.json",
+  "title": "get_oncall_shift — output",
+  "$ref": "_defs.schema.json#/$defs/Shift"
+}

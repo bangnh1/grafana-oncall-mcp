@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bangnh1/grafana-oncall-mcp/contracts/get_current_oncall_users.output.schema.json",
+  "title": "get_current_oncall_users — output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schedule_id", "as_of", "users", "shift_end_at"],
+  "properties": {
+    "schedule_id": { "type": "string", "minLength": 1 },
+    "as_of": { "$ref": "_defs.schema.json#/$defs/Timestamp" },
+    "users": {
+      "type": "array",
+      "items": { "$ref": "_defs.schema.json#/$defs/UserSummary" },
+      "description": "May be empty when no one is currently on call; agents MUST treat empty as 'no coverage', not an error."
+    },
+    "shift_end_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "When the current shift ends; null if there is no active shift."
+    }
+  }
+}
