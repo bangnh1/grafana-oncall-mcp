@@ -1,0 +1,124 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+# Allow only one concurrent release run; cancel in-progress
+# runs on a new tag push (rare but useful when re-tagging).
+concurrency:
+  group: release
+  cancel-in-progress: true
+
+permissions:
+  contents: write   # for creating the GitHub Release
+  id-token: write   # for PyPI trusted publishing
+
+jobs:
+  goreleaser:
+    name: goreleaser (GitHub Release)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Extract release notes from git tag
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          # Use the git tag message as release notes.
+          # Falls back to a simple "Release vX.Y.Z" line if
+          # the tag has no message body.
+          TAG_MSG=$(git tag -l --format='%(contents)' "v${VERSION}" 2>/dev/null || true)
+          if [ -n "$TAG_MSG" ]; then
+            printf '%s\n' "$TAG_MSG" > /tmp/release-notes.md
+          else
+            echo "Release ${GITHUB_REF_NAME}" > /tmp/release-notes.md
+          fi
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@01cbe076be10ba0af7b0b9319ac490a93d3d2fcd
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean --release-notes=/tmp/release-notes.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  pypi:
+    name: PyPI (go-to-wheel)
+    runs-on: ubuntu-latest
+    needs: [goreleaser]
+    environment:
+      name: pypi
+      url: https://pypi.org/p/grafana-oncall-mcp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v8.0.0
+        with:
+          enable-cache: false
+
+      - name: Build platform wheels
+        run: |
+          # Strip the leading "v" from the git tag; go-to-wheel
+          # expects a PEP 440 version (e.g. 0.2.0, not v0.2.0).
+          #
+          # TODO: switch to plain `uvx go-to-wheel` once the
+          # upstream Simon Willison repo (simonw/go-to-wheel)
+          # merges the `--package-path` option.
+          # Tracking: https://github.com/simonw/go-to-wheel/pull/5
+          #
+          # We pin the nikaro fork @ commit f7939c6 which carries
+          # that option. When the upstream merges it, drop the
+          # `--from` URL and use `uvx go-to-wheel` directly.
+          #
+          # The `--set-version-var main.version` flag injects the
+          # package version into the Go binary's `version` variable
+          # (declared as `var` in cmd/oncall-mcp/main.go so it can
+          # be overridden at link time). The flag was added in the
+          # nikaro fork alongside --package-path; see PR #5 on
+          # simonw/go-to-wheel for the upstream tracking.
+          uvx --from "go-to-wheel @ git+https://github.com/nikaro/go-to-wheel@f7939c6868e195204eae1370f899933e555513e3" \
+            go-to-wheel . \
+            --package-path ./cmd/oncall-mcp \
+            --name grafana-oncall-mcp \
+            --version "$VERSION" \
+            --set-version-var main.version \
+            --description "Grafana OnCall MCP server — query and manage OnCall schedules, shifts, teams, users, and alert groups via the Model Context Protocol" \
+            --url "https://github.com/bangnh1/grafana-oncall-mcp" \
+            --license Apache-2.0 \
+            --readme README.md
+
+      - name: List built wheels
+        run: |
+          echo "Built wheels:"
+          ls -la dist/ 2>/dev/null || true
+          find . -maxdepth 4 -name "*.whl" -type f -exec ls -la {} \;
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+        with:
+          # skip-existing: re-running an old tag won't fail because
+          # the version is already on PyPI; this also makes the
+          # workflow idempotent if a job is re-run.
+          skip-existing: true
+          # packages-glob is auto-detected by the action (any wheel
+          # under ./dist/ or current dir); no override needed.

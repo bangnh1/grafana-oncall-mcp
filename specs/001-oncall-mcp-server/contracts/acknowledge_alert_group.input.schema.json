@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bangnh1/grafana-oncall-mcp/contracts/acknowledge_alert_group.input.schema.json",
+  "title": "acknowledge_alert_group - input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["alert_group_id"],
+  "properties": {
+    "alert_group_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the alert group to acknowledge."
+    }
+  }
+}

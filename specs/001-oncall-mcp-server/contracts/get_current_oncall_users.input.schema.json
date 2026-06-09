@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bangnh1/grafana-oncall-mcp/contracts/get_current_oncall_users.input.schema.json",
+  "title": "get_current_oncall_users — input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schedule_id"],
+  "properties": {
+    "schedule_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the schedule whose current on-call users to return."
+    }
+  }
+}

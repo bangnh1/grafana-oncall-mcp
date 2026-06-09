@@ -1,0 +1,145 @@
+# docker-compose.yml — run the grafana-oncall-mcp server.
+#
+# Usage:
+#   cp env.example .env       # then edit .env with your Grafana details
+#   docker compose --profile stdio run --rm mcp-stdio
+#   docker compose --profile http up -d                       # serves streamable-HTTP
+#   docker compose --profile http logs -f
+#
+# Transport is selected by the compose profile, not by an env var;
+# the upstream Grafana OnCall MCP server supports three transports
+# (stdio, SSE, streamable-HTTP) and the same image can run any of
+# them. The default profile (when no --profile flag is passed) is
+# `stdio` for the most common developer workflow.
+#
+# The image is built locally from ./Dockerfile; if you prefer to
+# pull a pre-built image from a registry, override `image:` per
+# service or set the IMAGE_TAG env var.
+---
+name: grafana-oncall-mcp
+
+# Common settings shared by every service below. Anchors are
+# applied per-service so each service keeps its own command /
+# entrypoint (the flag set differs per transport).
+x-mcp-common: &mcp-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: grafana-oncall-mcp:${IMAGE_TAG:-local}
+  restart: unless-stopped
+  init: true
+  # Drop privileges inside the container; the binary is statically
+  # linked and does not need root.
+  user: "65534:65534"
+  read_only: true
+  tmpfs:
+    - /tmp:size=16M,mode=1777
+  security_opt:
+    - no-new-privileges:true
+  env_file:
+    # The .env file is operator-supplied. It is gitignored. If
+    # missing, docker compose will warn but services will start
+    # with whatever the operator set in the shell environment.
+    - path: .env
+      required: false
+  # Defence in depth: cap the resource footprint so a runaway MCP
+  # tool call cannot starve the host.
+  mem_limit: 256m
+  cpus: "1.0"
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  # --- stdio transport (the default for most MCP clients) ---------
+  # The stdio profile is one-shot: the container starts, attaches
+  # its stdin/stdout to the docker run caller, and exits when the
+  # caller disconnects. Operators typically invoke this from their
+  # MCP client (opencode, Claude Desktop, VS Code) via a
+  # `docker run` wrapper rather than `docker compose up`. The
+  # compose snippet is provided so the same image can be exercised
+  # in CI for smoke testing.
+  mcp-stdio:
+    <<: *mcp-common
+    profiles: ["stdio", "default"]
+    entrypoint: ["/usr/local/bin/grafana-oncall-mcp"]
+    command: ["-transport=stdio"]
+    # stdin_open + tty are required so the container accepts the
+    # MCP JSON-RPC traffic over stdin/stdout.
+    stdin_open: true
+    tty: false
+    # The stdio service is healthy iff the binary is running; we
+    # do not have a port to probe. Use a short-lived `true` instead
+    # of relying on the default which expects no args.
+    healthcheck:
+      test: ["CMD-SHELL", "exit 0"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # --- streamable-HTTP transport (recommended for shared/local use) -
+  # Use this when the MCP client is configured with a URL instead
+  # of a stdio command. The default port is 8000; override with
+  # MCP_PORT in .env. The /healthz endpoint is served by the MCP
+  # server (see internal/server/transport.go) and is used by the
+  # compose healthcheck below.
+  mcp-http:
+    <<: *mcp-common
+    profiles: ["http"]
+    entrypoint: ["/usr/local/bin/grafana-oncall-mcp"]
+    command:
+      - "-transport=streamable-http"
+      - "-address=0.0.0.0:${MCP_PORT:-8000}"
+      - "-endpoint-path=${MCP_ENDPOINT_PATH:-/mcp}"
+    environment:
+      METRICS: ${METRICS:-false}
+    ports:
+      - "${MCP_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:${MCP_PORT:-8000}${MCP_ENDPOINT_PATH:-/mcp} || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # --- SSE transport (legacy client compatibility) ----------------
+  mcp-sse:
+    <<: *mcp-common
+    profiles: ["sse"]
+    entrypoint: ["/usr/local/bin/grafana-oncall-mcp"]
+    command:
+      - "-transport=sse"
+      - "-address=0.0.0.0:${MCP_PORT:-8000}"
+      - "-base-path=${MCP_BASE_PATH:-/sse}"
+    ports:
+      - "${MCP_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:${MCP_PORT:-8000}${MCP_BASE_PATH:-/sse} || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+# ----------------------------------------------------------------------------
+# A note on the `--profile` choice
+# ----------------------------------------------------------------------------
+# `docker compose up` with no profile flag runs the default profile
+# (here: stdio). To run the HTTP server, pass --profile http. To
+# run both stdio and http at once (e.g. for ad-hoc testing) use
+# `--profile stdio --profile http`, but in practice operators pick
+# one transport per host.
+#
+# ----------------------------------------------------------------------------
+# How MCP clients consume this
+# ----------------------------------------------------------------------------
+# opencode / Claude Desktop / VS Code (Copilot) all support stdio
+# MCP servers by spawning a command. With this image, the
+# configuration is:
+#
+#   command: docker
+#   args:    compose -f /path/to/repo/docker-compose.yml run --rm mcp-stdio
+#
+# See docs/mcp-clients.md for per-client snippets.

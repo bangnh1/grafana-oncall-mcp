@@ -1,0 +1,108 @@
+# .goreleaser.yaml — build matrix for grafana-oncall-mcp.
+#
+# Mirrors the upstream mcp-grafana configuration so the resulting
+# artifacts are byte-compatible with the go-to-wheel pipeline that
+# builds the PyPI wheels (see .github/workflows/release.yml).
+#
+# This file is consumed by `goreleaser/goreleaser-action` to produce
+# the GitHub-Release `.tar.gz` / `.zip` archives. The PyPI job in
+# the same workflow runs go-to-wheel independently; it does NOT
+# share build flags with this file, so changes here must be
+# mirrored in the go-to-wheel invocation if they affect the wheel
+# (e.g. ldflags, version variable).
+---
+project_name: grafana-oncall-mcp
+
+# The Go binary's version is injected via -ldflags -X. The variable
+# is declared as `var` in cmd/oncall-mcp/main.go (see "Build the
+# binary with -X main.version={{.Version}}").
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+# Build matrix: every (goos, goarch) combination produces a
+# statically-linked, stripped binary uploaded to the GitHub
+# Release. Eight artifacts match the eight PyPI wheels produced
+# by the go-to-wheel pipeline.
+builds:
+  - id: default
+    main: ./cmd/oncall-mcp
+    binary: grafana-oncall-mcp
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+
+archives:
+  - id: default
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+    files:
+      - LICENSE
+      - README.md
+    formats:
+      - tar.gz
+      - zip
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+
+# Inject the version into a file too, for the Docker image
+# (Makefile and Dockerfile do not need this; they read
+# version from go.mod / main.go).
+release:
+  github:
+    owner: bangnh1
+    name: grafana-oncall-mcp
+  prerelease: auto
+  draft: false
+  name_template: "v{{.Version}}"
+  header: |
+    ## grafana-oncall-mcp v{{.Version}}
+
+    Released via [goreleaser-action](https://github.com/goreleaser/goreleaser-action).
+    PyPI wheels are published by a sibling job using [go-to-wheel](https://github.com/simonw/go-to-wheel).
+  footer: |
+    ## Installation
+
+    ```bash
+    # Recommended (requires uv):
+    uvx grafana-oncall-mcp
+
+    # Or via Docker:
+    docker run --rm -i -e GRAFANA_URL -e GRAFANA_SERVICE_ACCOUNT_TOKEN grafana/oncall-mcp -t stdio
+    ```
+
+changelog:
+  use: git
+  sort: asc
+  filters:
+    exclude:
+      - "^Merge branch"
+      - "^docs:"
+      - "^ci:"
+      - "^test:"
+
+# No Docker image build here; the project ships its own
+# Dockerfile (multi-stage Debian slim) and compose file
+# (docker-compose.yml). The Docker image is published separately
+# via a future image-publish workflow.

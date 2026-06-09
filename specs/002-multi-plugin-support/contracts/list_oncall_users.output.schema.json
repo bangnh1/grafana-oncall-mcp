@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bangnh1/grafana-oncall-mcp/contracts/list_oncall_users.output.schema.json",
+  "title": "list_oncall_users — output",
+  "allOf": [
+    { "$ref": "_defs.schema.json#/$defs/Page" },
+    {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": { "$ref": "_defs.schema.json#/$defs/User" }
+        }
+      }
+    }
+  ]
+}

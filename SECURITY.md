@@ -2,20 +2,19 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
-
 | Version | Supported          |
 | ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| main    | :white_check_mark: |
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+If you discover a security vulnerability in this repository, please report it
+by opening a pull request (PR) with the fix.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Please include in your PR:
+- A description of the vulnerability and its potential impact
+- Steps to reproduce or a proof-of-concept
+- The fix or mitigation
+
+We will review and respond within **7 business days** and merge the fix once
+validated. We will coordinate disclosure with you once the issue is resolved.

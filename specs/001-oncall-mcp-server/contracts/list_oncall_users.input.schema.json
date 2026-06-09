@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bangnh1/grafana-oncall-mcp/contracts/list_oncall_users.input.schema.json",
+  "title": "list_oncall_users — input",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "username": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Exact-match username filter. Returns at most one user when set."
+    },
+    "cursor": { "$ref": "_defs.schema.json#/$defs/Cursor" },
+    "limit": { "$ref": "_defs.schema.json#/$defs/Limit" }
+  }
+}
